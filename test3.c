@@ -10,9 +10,20 @@
 #define WRITE 1
 #define MAXLINE 100
 
+typedef struct back_proc_list{
+	pid_t pid;
+	char *name;
+}element;
+
 void childsignal();
-pid_t pid1, pid2, pid3;
+void delete_at(int);
+void delete_proc(pid_t);
+void view_back_proc();
+pid_t pid1, for_pid;
+element back_list[100];
 int amper = 0; // to check if background
+int fg = 0; // to check if foreground running
+int proc_cnt = 0;
 
 
 int main(void){
@@ -39,6 +50,7 @@ int main(void){
 		// check is Background
 		if(strchr(str,'&') != NULL){
 			*(strchr(str, '&')) = '\0';
+	printf("string after amper = %s", str);
 			amper = 1;
 		}
 		else
@@ -48,7 +60,7 @@ int main(void){
 		/*launch process*/
 		if((pid1 = fork()) == 0){
 			command1 = str;
-printf("command : %s\n", command1);
+//printf("command : %s\n", command1);
 
 			/* Input redirection*/
 			if(strchr(str,'<') != NULL){
@@ -129,16 +141,26 @@ printf("command : %s\n", command1);
 			execvp(args[0], args);
 		}
 
-		// wait if foreground process
-		if(amper == 0)
-			wait(&status);
+		/* if foreground*/
+		if(amper == 0){
+			fg = 1;
+			for_pid = pid1;
+		} 
+		/* if background*/
+		else{
+			element proc;
+			proc.name = command1;
+			proc.pid = pid1;
+			back_list[proc_cnt++] = proc;
+		}
 
-		while(amper == 1){
+view_back_proc();
+		// wait if foreground process
+		while(fg == 1){
 			pause();
 			printf("Wakened in pause()! %d\n", ++count);
 		}
 
-//		printf("bye\n");
 	}
 }
 
@@ -146,12 +168,36 @@ void childsignal(){
 
 	int pid, status;
 	pid = waitpid(-1, &status, 0);
-		/*foreground process is terminated, set amper = 0*/
-	if(pid == pid2){
-		printf("amper is set to 0\n");
-		amper = 0;
+		/*foreground process is terminated, set fg = 0*/
+	if(pid == for_pid){
+		printf("fg is set to 0\n");
+		fg = 0;
+	}
+	else{
+		delete_proc(pid);
 	}
 
 
 	printf("called %d\n", pid);
+}
+
+void delete_at(int index){
+	for(int i = index; i<proc_cnt; i++)
+		back_list[i] = back_list[i+1];
+	--proc_cnt;
+}
+
+void delete_proc(pid_t pid){
+	for(int i = 0; i<proc_cnt; i++){
+		if(back_list[i].pid == pid){
+			delete_at(i);
+			break;
+		}
+	}
+}
+void view_back_proc(){
+	printf("name       PID\n");
+	for(int i = 0; i<proc_cnt; i++){
+		printf("%10s %d\n", back_list[i].name, back_list[i].pid);
+	}
 }

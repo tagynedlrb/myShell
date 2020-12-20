@@ -39,7 +39,7 @@ int main(void){
 		char **next = args;
 
 		/* shell prompt start*/
-		printf("[myshell]");
+		printf("[myshell] ");
 		fgets(str, sizeof(str), stdin);
 		str[strlen(str)-1] = '\0';
 
@@ -73,7 +73,7 @@ int main(void){
 			if(strchr(str,'<') != NULL){
 				command1 = strtok(str, "< ");
 				command2 = strtok(NULL, "< ");
-				fd = open(command2, O_CREAT|O_TRUNC|O_WRONLY, 0600);
+				fd = open(command2, O_RDONLY);
 				dup2(fd, 0);
 				close(fd);
 			}
@@ -146,6 +146,9 @@ int main(void){
 			for(next = args; *next != 0; next++)
 				//puts(*next);
 			execvp(args[0], args);
+			/* if error*/
+			fg = 0;
+			exit(0);
 		}
 
 		/* if foreground*/
@@ -201,8 +204,11 @@ void delete_proc(pid_t pid){
 	}
 }
 void view_back_proc(){
-	printf("name       PID\n");
+	printf("================\n");
+	printf("NAME       PID\n");
+	printf("----------------\n");
 	for(int i = 0; i<proc_cnt; i++){
 		printf("%-10s %d\n", back_list[i].name, back_list[i].pid);
 	}
+	printf("================\n");
 }
